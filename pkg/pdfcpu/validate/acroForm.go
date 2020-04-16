@@ -194,7 +194,7 @@ func validateAcroFieldDict(xRefTable *pdf.XRefTable, ir pdf.IndirectRef, inField
 	if o, ok := d.Find("Kids"); ok {
 
 		// dict represents a non terminal field.
-		if d.Subtype() != nil && *d.Subtype() == "Widget" {
+		if d.Subtype() != "" && d.Subtype() == "Widget" {
 			return errors.New("pdfcpu: validateAcroFieldDict: non terminal field can not be widget annotation")
 		}
 

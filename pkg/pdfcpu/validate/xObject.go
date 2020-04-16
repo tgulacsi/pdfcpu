@@ -336,11 +336,11 @@ func validateOPIVersionDict(xRefTable *pdf.XRefTable, d pdf.Dict) error {
 
 func validateMaskStreamDict(xRefTable *pdf.XRefTable, sd *pdf.StreamDict) error {
 
-	if sd.Type() != nil && *sd.Type() != "XObject" {
+	if sd.Type() != "" && sd.Type() != "XObject" {
 		return errors.New("pdfcpu: validateMaskStreamDict: corrupt imageStreamDict type")
 	}
 
-	if sd.Subtype() == nil || *sd.Subtype() != "Image" {
+	if sd.Subtype() == "" || sd.Subtype() != "Image" {
 		return errors.New("pdfcpu: validateMaskStreamDict: corrupt imageStreamDict subtype")
 	}
 
@@ -673,7 +673,7 @@ func validateFormStreamDictPart2(xRefTable *pdf.XRefTable, d pdf.Dict, dictName 
 		return err
 	}
 
-	if hasPieceInfo && lm == nil {
+	if hasPieceInfo && lm == "" {
 		err = errors.New("pdfcpu: validateFormStreamDictPart2: missing \"LastModified\" (required by \"PieceInfo\")")
 		return err
 	}

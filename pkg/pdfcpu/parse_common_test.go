@@ -23,7 +23,7 @@ import (
 
 func doTestParseObjectOK(parseString string, t *testing.T) {
 	str := parseString
-	o, err := parseObject(&parseString)
+	o, err := parseObject(parseString)
 	if err != nil {
 		t.Errorf("parseObject failed: <%v>\n", err)
 		return
@@ -42,7 +42,7 @@ func doTestParseObjectOK(parseString string, t *testing.T) {
 
 func doTestParseObjectFail(parseString string, t *testing.T) {
 	s := parseString
-	_, err := parseObject(&parseString)
+	_, err := parseObject(parseString)
 	if err == nil {
 		t.Errorf("parseObject should have returned an error for %s\n", s)
 	} else {

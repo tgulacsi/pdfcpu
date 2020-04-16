@@ -741,7 +741,7 @@ func validatePageDict(xRefTable *pdf.XRefTable, d pdf.Dict, objNumber, genNumber
 
 	dictName := "pageDict"
 
-	if ir := d.IndirectRefEntry("Parent"); ir == nil {
+	if _, ok := d.IndirectRefEntry("Parent"); !ok {
 		return errors.New("pdfcpu: validatePageDict: missing parent")
 	}
 
@@ -779,7 +779,7 @@ func validatePageDict(xRefTable *pdf.XRefTable, d pdf.Dict, objNumber, genNumber
 		return err
 	}
 
-	if hasPieceInfo && lm == nil && xRefTable.ValidationMode == pdf.ValidationStrict {
+	if hasPieceInfo && lm == "" && xRefTable.ValidationMode == pdf.ValidationStrict {
 		return errors.New("pdfcpu: validatePageDict: missing \"LastModified\" (required by \"PieceInfo\")")
 	}
 
@@ -862,27 +862,27 @@ func dictTypeForPageNodeDict(d pdf.Dict) (string, error) {
 	}
 
 	dictType := d.Type()
-	if dictType == nil {
+	if dictType == "" {
 		return "", errors.New("pdfcpu: dictTypeForPageNodeDict: missing pageNodeDict type")
 	}
 
-	return *dictType, nil
+	return dictType, nil
 }
 
 func validateResources(xRefTable *pdf.XRefTable, d pdf.Dict) (hasResources bool, err error) {
 
 	// Get number of pages of this PDF file.
-	pageCount := d.IntEntry("Count")
-	if pageCount == nil {
+	pageCount, ok := d.IntEntry("Count")
+	if !ok {
 		return false, errors.New("pdfcpu: validateResources: missing \"Count\"")
 	}
 
 	// TODO not ideal - overall pageCount is only set during validation!
 	if xRefTable.PageCount == 0 {
-		xRefTable.PageCount = *pageCount
+		xRefTable.PageCount = pageCount
 	}
 
-	log.Validate.Printf("validateResources: This page node has %d pages\n", *pageCount)
+	log.Validate.Printf("validateResources: This page node has %d pages\n", pageCount)
 
 	// Resources: optional, dict
 	o, ok := d.Find("Resources")
@@ -911,8 +911,8 @@ func validatePagesDict(xRefTable *pdf.XRefTable, d pdf.Dict, objNumber, genNumbe
 	}
 
 	// Iterate over page tree.
-	kidsArray := d.ArrayEntry("Kids")
-	if kidsArray == nil {
+	kidsArray, ok := d.ArrayEntry("Kids")
+	if !ok {
 		return errors.New("pdfcpu: validatePagesDict: corrupt \"Kids\" entry")
 	}
 
@@ -972,8 +972,8 @@ func validatePages(xRefTable *pdf.XRefTable, rootDict pdf.Dict) (pdf.Dict, error
 
 	// Ensure indirect reference entry "Pages".
 
-	ir := rootDict.IndirectRefEntry("Pages")
-	if ir == nil {
+	ir, ok := rootDict.IndirectRefEntry("Pages")
+	if !ok {
 		return nil, errors.New("pdfcpu: validatePages: missing indirect obj for pages dict")
 	}
 
@@ -981,7 +981,7 @@ func validatePages(xRefTable *pdf.XRefTable, rootDict pdf.Dict) (pdf.Dict, error
 	genNumber := ir.GenerationNumber.Value()
 
 	// Dereference root of page node tree.
-	rootPageNodeDict, err := xRefTable.DereferenceDict(*ir)
+	rootPageNodeDict, err := xRefTable.DereferenceDict(ir)
 	if err != nil {
 		return nil, err
 	}

@@ -193,24 +193,24 @@ func validateDateEntry(xRefTable *pdf.XRefTable, d pdf.Dict, dictName, entryName
 
 	o, err := d.Entry(dictName, entryName, required)
 	if err != nil || o == nil {
-		return nil, err
+		return "", err
 	}
 
 	date, err := xRefTable.DereferenceStringOrHexLiteral(o, sinceVersion, validateDate)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	if date == "" {
 		if required {
-			return nil, errors.Errorf("validateDateEntry: dict=%s required entry=%s is nil", dictName, entryName)
+			return "", errors.Errorf("validateDateEntry: dict=%s required entry=%s is nil", dictName, entryName)
 		}
 		log.Validate.Printf("validateDateEntry end: optional entry %s is nil\n", entryName)
-		return nil, nil
+		return "", nil
 	}
 
 	log.Validate.Printf("validateDateEntry end: entry=%s\n", entryName)
 
-	return &date, nil
+	return date, nil
 }
 
 func validateDictEntry(xRefTable *pdf.XRefTable, d pdf.Dict, dictName, entryName string, required bool, sinceVersion pdf.Version, validate func(pdf.Dict) bool) (pdf.Dict, error) {
@@ -1015,25 +1015,25 @@ func validateStringEntry(xRefTable *pdf.XRefTable, d pdf.Dict, dictName, entryNa
 
 	o, err := d.Entry(dictName, entryName, required)
 	if err != nil || o == nil {
-		return nil, err
+		return "", err
 	}
 
 	o, err = xRefTable.Dereference(o)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	if o == nil {
 		if required {
-			return nil, errors.Errorf("pdfcpu: validateStringEntry: dict=%s required entry=%s is nil", dictName, entryName)
+			return "", errors.Errorf("pdfcpu: validateStringEntry: dict=%s required entry=%s is nil", dictName, entryName)
 		}
 		log.Validate.Printf("validateStringEntry end: optional entry %s is nil\n", entryName)
-		return nil, nil
+		return "", nil
 	}
 
 	// Version check
 	err = xRefTable.ValidateVersion(fmt.Sprintf("dict=%s entry=%s", dictName, entryName), sinceVersion)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	var s string
@@ -1047,17 +1047,17 @@ func validateStringEntry(xRefTable *pdf.XRefTable, d pdf.Dict, dictName, entryNa
 		s, err = pdf.HexLiteralToString(o.Value())
 
 	default:
-		return nil, errors.Errorf("pdfcpu: validateStringEntry: dict=%s entry=%s invalid type", dictName, entryName)
+		return "", errors.Errorf("pdfcpu: validateStringEntry: dict=%s entry=%s invalid type", dictName, entryName)
 	}
 
 	// Validation
 	if validate != nil && !validate(s) {
-		return nil, errors.Errorf("pdfcpu: validateStringEntry: dict=%s entry=%s invalid dict entry", dictName, entryName)
+		return "", errors.Errorf("pdfcpu: validateStringEntry: dict=%s entry=%s invalid dict entry", dictName, entryName)
 	}
 
 	log.Validate.Printf("validateStringEntry end: entry=%s\n", entryName)
 
-	return &s, nil
+	return s, nil
 }
 
 func validateStringArrayEntry(xRefTable *pdf.XRefTable, d pdf.Dict, dictName, entryName string, required bool, sinceVersion pdf.Version, validate func(pdf.Array) bool) (pdf.Array, error) {

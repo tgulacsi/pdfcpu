@@ -77,7 +77,7 @@ func validateOutlineItemDict(xRefTable *pdf.XRefTable, d pdf.Dict) error {
 	return validateActionOrDestination(xRefTable, d, dictName, pdf.V11)
 }
 
-func validateOutlineTree(xRefTable *pdf.XRefTable, first, last *pdf.IndirectRef) error {
+func validateOutlineTree(xRefTable *pdf.XRefTable, first, last pdf.IndirectRef) error {
 
 	var (
 		d         pdf.Dict
@@ -86,12 +86,12 @@ func validateOutlineTree(xRefTable *pdf.XRefTable, first, last *pdf.IndirectRef)
 	)
 
 	// Process linked list of outline items.
-	for ir := first; ir != nil; ir = d.IndirectRefEntry("Next") {
+	for ir, foundNext := first, true; foundNext; ir, foundNext = d.IndirectRefEntry("Next") {
 
 		objNumber = ir.ObjectNumber.Value()
 
 		// outline item dict
-		d, err = xRefTable.DereferenceDict(*ir)
+		d, err = xRefTable.DereferenceDict(ir)
 		if err != nil {
 			return err
 		}
@@ -104,16 +104,16 @@ func validateOutlineTree(xRefTable *pdf.XRefTable, first, last *pdf.IndirectRef)
 			return err
 		}
 
-		firstChild := d.IndirectRefEntry("First")
-		lastChild := d.IndirectRefEntry("Last")
+		firstChild, firstOk := d.IndirectRefEntry("First")
+		lastChild, lastOk := d.IndirectRefEntry("Last")
 
-		if firstChild == nil && lastChild == nil {
+		if !firstOk && !lastOk {
 			// Leaf
 			continue
 		}
 
-		if firstChild != nil && (xRefTable.ValidationMode == pdf.ValidationRelaxed ||
-			xRefTable.ValidationMode == pdf.ValidationStrict && lastChild != nil) {
+		if firstOk && (xRefTable.ValidationMode == pdf.ValidationRelaxed ||
+			xRefTable.ValidationMode == pdf.ValidationStrict && lastOk) {
 			// Recurse into subtree.
 			err = validateOutlineTree(xRefTable, firstChild, lastChild)
 			if err != nil {
@@ -153,18 +153,18 @@ func validateOutlines(xRefTable *pdf.XRefTable, rootDict pdf.Dict, required bool
 		return err
 	}
 
-	first := d.IndirectRefEntry("First")
-	last := d.IndirectRefEntry("Last")
+	first, firstOk := d.IndirectRefEntry("First")
+	last, lastOk := d.IndirectRefEntry("Last")
 
-	if first == nil {
-		if last != nil {
+	if !firstOk {
+		if lastOk {
 			return errors.New("pdfcpu: validateOutlines: corrupted, root needs both first and last")
 		}
 		// leaf
 		return nil
 	}
 
-	if xRefTable.ValidationMode == pdf.ValidationStrict && last == nil {
+	if xRefTable.ValidationMode == pdf.ValidationStrict && !lastOk {
 		return errors.New("pdfcpu: validateOutlines: corrupted, root needs both first and last")
 	}
 

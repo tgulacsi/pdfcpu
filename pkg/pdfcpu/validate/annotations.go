@@ -256,7 +256,7 @@ func validateAnnotationDictText(xRefTable *pdf.XRefTable, d pdf.Dict, dictName s
 
 	// StateModel, text string, since V1.5
 	validate = func(s string) bool { return pdf.MemberOf(s, []string{"Marked", "Review"}) }
-	_, err = validateStringEntry(xRefTable, d, dictName, "StateModel", state != nil, pdf.V15, validate)
+	_, err = validateStringEntry(xRefTable, d, dictName, "StateModel", state != "", pdf.V15, validate)
 
 	return err
 }
@@ -981,7 +981,7 @@ func validateAnnotationDictTrapNet(xRefTable *pdf.XRefTable, d pdf.Dict, dictNam
 				continue
 			}
 
-			if d.Type() == nil || *d.Type() != "Font" {
+			if d.Type() != "Font" {
 				return false
 			}
 
@@ -1556,15 +1556,15 @@ func validatePageAnnotations(xRefTable *pdf.XRefTable, d pdf.Dict) error {
 func validatePagesAnnotations(xRefTable *pdf.XRefTable, d pdf.Dict) error {
 
 	// Get number of pages of this PDF file.
-	pageCount := d.IntEntry("Count")
-	if pageCount == nil {
+	pageCount, ok := d.IntEntry("Count")
+	if !ok {
 		return errors.New("pdfcpu: validatePagesAnnotations: missing \"Count\"")
 	}
 
-	log.Validate.Printf("validatePagesAnnotations: This page node has %d pages\n", *pageCount)
+	log.Validate.Printf("validatePagesAnnotations: This page node has %d pages\n", pageCount)
 
 	// Iterate over page tree.
-	kidsArray := d.ArrayEntry("Kids")
+	kidsArray, _ := d.ArrayEntry("Kids")
 
 	for _, v := range kidsArray {
 
@@ -1582,11 +1582,11 @@ func validatePagesAnnotations(xRefTable *pdf.XRefTable, d pdf.Dict) error {
 		}
 
 		dictType := d.Type()
-		if dictType == nil {
+		if dictType == "" {
 			return errors.New("pdfcpu: validatePagesAnnotations: missing pageNodeDict type")
 		}
 
-		switch *dictType {
+		switch dictType {
 
 		case "Pages":
 			// Recurse over pagetree
@@ -1602,7 +1602,7 @@ func validatePagesAnnotations(xRefTable *pdf.XRefTable, d pdf.Dict) error {
 			}
 
 		default:
-			return errors.Errorf("validatePagesAnnotations: expected dict type: %s\n", *dictType)
+			return errors.Errorf("validatePagesAnnotations: expected dict type: %s\n", dictType)
 
 		}
 

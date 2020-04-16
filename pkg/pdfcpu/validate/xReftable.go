@@ -79,8 +79,8 @@ func validatePageLabels(xRefTable *pdf.XRefTable, rootDict pdf.Dict, required bo
 
 	// Dict or indirect ref to Dict
 
-	ir := rootDict.IndirectRefEntry("PageLabels")
-	if ir == nil {
+	ir, ok := rootDict.IndirectRefEntry("PageLabels")
+	if !ok {
 		if required {
 			return errors.Errorf("validatePageLabels: required entry \"PageLabels\" missing")
 		}
@@ -95,7 +95,7 @@ func validatePageLabels(xRefTable *pdf.XRefTable, rootDict pdf.Dict, required bo
 		return err
 	}
 
-	_, _, err = validateNumberTree(xRefTable, "PageLabel", *ir, true)
+	_, _, err = validateNumberTree(xRefTable, "PageLabel", ir, true)
 
 	return err
 }

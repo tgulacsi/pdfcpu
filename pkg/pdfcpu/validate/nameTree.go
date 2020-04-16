@@ -534,13 +534,13 @@ func validateIDTreeValue(xRefTable *pdf.XRefTable, o pdf.Object, sinceVersion pd
 	}
 
 	dictType := d.Type()
-	if dictType == nil || *dictType == "StructElem" {
+	if dictType == "" || dictType == "StructElem" {
 		err = validateStructElementDict(xRefTable, d)
 		if err != nil {
 			return err
 		}
 	} else {
-		return errors.Errorf("pdfcpu: validateIDTreeValue: invalid dictType %s (should be \"StructElem\")\n", *dictType)
+		return errors.Errorf("pdfcpu: validateIDTreeValue: invalid dictType %s (should be \"StructElem\")\n", dictType)
 	}
 
 	return nil

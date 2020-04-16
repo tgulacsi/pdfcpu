@@ -33,7 +33,7 @@ func validateDestinationArrayFirstElement(xRefTable *pdf.XRefTable, a pdf.Array)
 	case pdf.Integer: // no further processing
 
 	case pdf.Dict:
-		if o.Type() == nil || *o.Type() != "Page" {
+		if o.Type() != "Page" {
 			err = errors.New("pdfcpu: validateDestinationArrayFirstElement: first element refers to invalid destination page dict")
 		}
 

@@ -19,7 +19,7 @@ package pdfcpu
 import "testing"
 
 func doTestParseArrayOK(parseString string, t *testing.T) {
-	_, err := parseObject(&parseString)
+	_, err := parseObject(parseString)
 	if err != nil {
 		t.Errorf("parseArray failed: <%v> <%s>\n", err, parseString)
 		return
@@ -28,7 +28,7 @@ func doTestParseArrayOK(parseString string, t *testing.T) {
 
 func doTestParseArrayFail(parseString string, t *testing.T) {
 	s := parseString
-	_, err := parseObject(&parseString)
+	_, err := parseObject(parseString)
 	if err == nil {
 		t.Errorf("parseArray should have returned an error for %s\n", s)
 	}

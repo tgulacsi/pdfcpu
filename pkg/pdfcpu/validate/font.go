@@ -35,19 +35,19 @@ func validateFontFile3SubType(sd *pdf.StreamDict, fontType string) error {
 	dictSubType := sd.Subtype()
 
 	if fontType == "Type1" || fontType == "MMType1" {
-		if dictSubType == nil || *dictSubType != "Type1C" {
+		if dictSubType == "" || dictSubType != "Type1C" {
 			return errors.New("pdfcpu: validateFontFile3SubType: FontFile3 missing Subtype \"Type1C\"")
 		}
 	}
 
 	if fontType == "CIDFontType0" {
-		if dictSubType == nil || *dictSubType != "CIDFontType0C" {
+		if dictSubType == "" || dictSubType != "CIDFontType0C" {
 			return errors.New("pdfcpu: validateFontFile3SubType: FontFile3 missing Subtype \"CIDFontType0C\"")
 		}
 	}
 
 	if fontType == "OpenType" {
-		if dictSubType == nil || *dictSubType != "OpenType" {
+		if dictSubType == "" || dictSubType != "OpenType" {
 			return errors.New("pdfcpu: validateFontFile3SubType: FontFile3 missing Subtype \"OpenType\"")
 		}
 	}
@@ -100,7 +100,7 @@ func validateFontDescriptorType(xRefTable *pdf.XRefTable, d pdf.Dict) (err error
 
 	dictType := d.Type()
 
-	if dictType == nil {
+	if dictType == "" {
 
 		if xRefTable.ValidationMode == pdf.ValidationRelaxed {
 			log.Validate.Println("validateFontDescriptor: missing entry \"Type\"")
@@ -110,7 +110,7 @@ func validateFontDescriptorType(xRefTable *pdf.XRefTable, d pdf.Dict) (err error
 
 	}
 
-	if dictType != nil && *dictType != "FontDescriptor" {
+	if dictType != "" && dictType != "FontDescriptor" {
 		return errors.New("pdfcpu: validateFontDescriptor: corrupt font descriptor dict")
 	}
 
@@ -931,16 +931,16 @@ func validateFontDict(xRefTable *pdf.XRefTable, o pdf.Object) (err error) {
 		return err
 	}
 
-	if d.Type() == nil || *d.Type() != "Font" {
+	if d.Type() == "" || d.Type() != "Font" {
 		return errors.New("pdfcpu: validateFontDict: corrupt font dict")
 	}
 
 	subtype := d.Subtype()
-	if subtype == nil {
+	if subtype == "" {
 		return errors.New("pdfcpu: validateFontDict: missing Subtype")
 	}
 
-	switch *subtype {
+	switch subtype {
 
 	case "TrueType":
 		err = validateTrueTypeFontDict(xRefTable, d)
@@ -958,7 +958,7 @@ func validateFontDict(xRefTable *pdf.XRefTable, o pdf.Object) (err error) {
 		err = validateType3FontDict(xRefTable, d)
 
 	default:
-		return errors.Errorf("pdfcpu: validateFontDict: unknown Subtype: %s\n", *subtype)
+		return errors.Errorf("pdfcpu: validateFontDict: unknown Subtype: %s\n", subtype)
 
 	}
 

@@ -153,9 +153,9 @@ func compare(t *testing.T, fn1, fn2 string) {
 }
 
 func printOptionalSMask(t *testing.T, sd *StreamDict) {
-	o := sd.IndirectRefEntry("SMask")
-	if o != nil {
-		sm, err := xRefTable.Dereference(*o)
+	o, ok := sd.IndirectRefEntry("SMask")
+	if ok {
+		sm, err := xRefTable.Dereference(o)
 		if err != nil {
 			t.Fatalf("err: %v\n", err)
 		}
@@ -270,9 +270,9 @@ func TestReadImageStreamWritePNG(t *testing.T) {
 
 	// Print the image object.
 	fmt.Printf("created imageObj: %s\n", sd)
-	o := sd.IndirectRefEntry("SMask")
-	if o != nil {
-		sm, err := xRefTable.Dereference(*o)
+	o, ok := sd.IndirectRefEntry("SMask")
+	if ok {
+		sm, err := xRefTable.Dereference(o)
 		if err != nil {
 			t.Fatalf("err: %v\n", err)
 		}

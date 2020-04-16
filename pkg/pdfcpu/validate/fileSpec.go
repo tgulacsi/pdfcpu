@@ -272,7 +272,7 @@ func validateFileSpecDictEntriesEFAndRF(xRefTable *pdf.XRefTable, efDict, rfDict
 
 func validateFileSpecDictType(xRefTable *pdf.XRefTable, d pdf.Dict) error {
 
-	if d.Type() == nil || (*d.Type() != "Filespec" && (xRefTable.ValidationMode == pdf.ValidationRelaxed && *d.Type() != "F")) {
+	if typ := d.Type(); typ == "" || (typ != "Filespec" && (xRefTable.ValidationMode == pdf.ValidationRelaxed && typ != "F")) {
 		return errors.New("pdfcpu: validateFileSpecDictType: missing type: FileSpec")
 	}
 
