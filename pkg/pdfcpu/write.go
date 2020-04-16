@@ -229,8 +229,8 @@ func writeRootEntryToObjStream(ctx *Context, d Dict, dictName, entryName string,
 func writePages(ctx *Context, rootDict Dict) error {
 
 	// Page tree root (the top "Pages" dict) must be indirect reference.
-	ir := rootDict.IndirectRefEntry("Pages")
-	if ir == nil {
+	ir, ok := rootDict.IndirectRefEntry("Pages")
+	if !ok {
 		return errors.New("pdfcpu: writePages: missing indirect obj for pages dict")
 	}
 
@@ -239,7 +239,7 @@ func writePages(ctx *Context, rootDict Dict) error {
 
 	// Write page tree.
 	p := 0
-	_, _, err := writePagesDict(ctx, ir, &p)
+	_, _, err := writePagesDict(ctx, ir, p)
 	if err != nil {
 		return err
 	}
@@ -382,7 +382,7 @@ func writeTrailerDict(ctx *Context) error {
 	}
 
 	d := NewDict()
-	d.Insert("Size", Integer(*xRefTable.Size))
+	d.Insert("Size", Integer(xRefTable.Size))
 	d.Insert("Root", *xRefTable.Root)
 
 	if xRefTable.Info != nil {
@@ -431,14 +431,14 @@ func writeXRefSubsection(ctx *Context, start int, size int) error {
 		var s string
 
 		if entry.Free {
-			s = fmt.Sprintf("%010d %05d f%2s", *entry.Offset, *entry.Generation, w.Eol)
+			s = fmt.Sprintf("%010d %05d f%2s", entry.Offset, entry.Generation, w.Eol)
 		} else {
 			var off int64
 			writeOffset, found := ctx.Write.Table[i]
 			if found {
 				off = writeOffset
 			}
-			s = fmt.Sprintf("%010d %05d n%2s", off, *entry.Generation, w.Eol)
+			s = fmt.Sprintf("%010d %05d n%2s", off, entry.Generation, w.Eol)
 		}
 
 		lines = append(lines, fmt.Sprintf("%d: %s", i, s))
@@ -476,9 +476,9 @@ func deleteRedundantObjects(ctx *Context) {
 
 	xRefTable := ctx.XRefTable
 
-	log.Write.Printf("deleteRedundantObjects begin: Size=%d\n", *xRefTable.Size)
+	log.Write.Printf("deleteRedundantObjects begin: Size=%d\n", xRefTable.Size)
 
-	for i := 0; i < *xRefTable.Size; i++ {
+	for i := 0; i < xRefTable.Size; i++ {
 
 		// Missing object remains missing.
 		entry, found := xRefTable.Find(i)
@@ -505,19 +505,19 @@ func deleteRedundantObjects(ctx *Context) {
 
 		// Object not written
 
-		if ctx.Read.Linearized && entry.Offset != nil {
+		if ctx.Read.Linearized && entry.Offset != 0 {
 			// This block applies to pre existing objects only.
 			// Since there is no type entry for stream dicts associated with linearization dicts
 			// we have to check every StreamDict that has not been written.
 			if _, ok := entry.Object.(StreamDict); ok {
 
-				if *entry.Offset == *xRefTable.OffsetPrimaryHintTable {
+				if entry.Offset == *xRefTable.OffsetPrimaryHintTable {
 					xRefTable.LinearizationObjs[i] = true
 					log.Write.Printf("deleteRedundantObjects: primaryHintTable at obj #%d\n", i)
 				}
 
 				if xRefTable.OffsetOverflowHintTable != nil &&
-					*entry.Offset == *xRefTable.OffsetOverflowHintTable {
+					entry.Offset == *xRefTable.OffsetOverflowHintTable {
 					xRefTable.LinearizationObjs[i] = true
 					log.Write.Printf("deleteRedundantObjects: overflowHintTable at obj #%d\n", i)
 				}
@@ -684,20 +684,20 @@ func createXRefStream(ctx *Context, i1, i2, i3 int) ([]byte, *Array, error) {
 		if entry.Free {
 
 			// unused
-			log.Write.Printf("createXRefStream: unused i=%d nextFreeAt:%d gen:%d\n", j, int(*entry.Offset), int(*entry.Generation))
+			log.Write.Printf("createXRefStream: unused i=%d nextFreeAt:%d gen:%d\n", j, entry.Offset, entry.Generation)
 
 			s1 = int64ToBuf(0, i1)
-			s2 = int64ToBuf(*entry.Offset, i2)
-			s3 = int64ToBuf(int64(*entry.Generation), i3)
+			s2 = int64ToBuf(entry.Offset, i2)
+			s3 = int64ToBuf(int64(entry.Generation), i3)
 
 		} else if entry.Compressed {
 
 			// in use, compressed into object stream
-			log.Write.Printf("createXRefStream: compressed i=%d at objstr %d[%d]\n", j, int(*entry.ObjectStream), int(*entry.ObjectStreamInd))
+			log.Write.Printf("createXRefStream: compressed i=%d at objstr %d[%d]\n", j, int(entry.ObjectStream), int(entry.ObjectStreamInd))
 
 			s1 = int64ToBuf(2, i1)
-			s2 = int64ToBuf(int64(*entry.ObjectStream), i2)
-			s3 = int64ToBuf(int64(*entry.ObjectStreamInd), i3)
+			s2 = int64ToBuf(int64(entry.ObjectStream), i2)
+			s3 = int64ToBuf(int64(entry.ObjectStreamInd), i3)
 
 		} else {
 
@@ -707,11 +707,11 @@ func createXRefStream(ctx *Context, i1, i2, i3 int) ([]byte, *Array, error) {
 			}
 
 			// in use, uncompressed
-			log.Write.Printf("createXRefStream: used i=%d offset:%d gen:%d\n", j, int(off), int(*entry.Generation))
+			log.Write.Printf("createXRefStream: used i=%d offset:%d gen:%d\n", j, off, entry.Generation)
 
 			s1 = int64ToBuf(1, i1)
 			s2 = int64ToBuf(off, i2)
-			s3 = int64ToBuf(int64(*entry.Generation), i3)
+			s3 = int64ToBuf(int64(entry.Generation), i3)
 
 		}
 
@@ -762,11 +762,11 @@ func writeXRefStream(ctx *Context) error {
 		return err
 	}
 
-	xRefStreamDict.Insert("Size", Integer(*xRefTable.Size))
+	xRefStreamDict.Insert("Size", Integer(xRefTable.Size))
 
 	offset := ctx.Write.Offset
 
-	i2Base := int64(*ctx.Size)
+	i2Base := int64(ctx.Size)
 	if offset > i2Base {
 		i2Base = offset
 	}
@@ -929,14 +929,14 @@ func updateEncryption(ctx *Context) error {
 
 	// ctx.Cmd == CHANGEUPW or CHANGE OPW
 
-	if ctx.UserPWNew != nil {
+	if ctx.UserPWNew != "" {
 		//fmt.Printf("change upw from <%s> to <%s>\n", ctx.UserPW, *ctx.UserPWNew)
-		ctx.UserPW = *ctx.UserPWNew
+		ctx.UserPW = ctx.UserPWNew
 	}
 
-	if ctx.OwnerPWNew != nil {
+	if ctx.OwnerPWNew != "" {
 		//fmt.Printf("change opw from <%s> to <%s>\n", ctx.OwnerPW, *ctx.OwnerPWNew)
-		ctx.OwnerPW = *ctx.OwnerPWNew
+		ctx.OwnerPW = ctx.OwnerPWNew
 	}
 
 	if ctx.E.R == 5 {
@@ -997,7 +997,7 @@ func handleEncryption(ctx *Context) error {
 			log.CLI.Printf("using %s-%d\n", alg, ctx.EncryptKeyLength)
 		}
 
-	} else if ctx.UserPWNew != nil || ctx.OwnerPWNew != nil || ctx.Cmd == SETPERMISSIONS {
+	} else if ctx.UserPWNew != "" || ctx.OwnerPWNew != "" || ctx.Cmd == SETPERMISSIONS {
 
 		err := updateEncryption(ctx)
 		if err != nil {

@@ -56,7 +56,7 @@ func writePageDict(ctx *Context, ir *IndirectRef, pageDict Dict, pageNr int) err
 
 	log.Write.Printf("writePageDict: new offset = %d\n", ctx.Write.Offset)
 
-	if ir := pageDict.IndirectRefEntry("Parent"); ir == nil {
+	if _, ok := pageDict.IndirectRefEntry("Parent"); !ok {
 		return errors.New("pdfcpu: writePageDict: missing parent")
 	}
 
@@ -130,14 +130,14 @@ func pageNodeDict(ctx *Context, o Object) (d Dict, indRef *IndirectRef, err erro
 	}
 
 	dictType := d.Type()
-	if dictType == nil {
+	if dictType == "" {
 		return nil, nil, errors.New("pdfcpu: pageNodeDict: missing pageNodeDict type")
 	}
 
 	return d, &ir, nil
 }
 
-func writeKids(ctx *Context, a Array, pageNr *int) (Array, int, error) {
+func writeKids(ctx *Context, a Array, pageNr int) (Array, int, error) {
 
 	kids := Array{}
 	count := 0
@@ -152,11 +152,11 @@ func writeKids(ctx *Context, a Array, pageNr *int) (Array, int, error) {
 			continue
 		}
 
-		switch *d.Type() {
+		switch d.Type() {
 
 		case "Pages":
 			// Recurse over pagetree
-			skip, c, err := writePagesDict(ctx, ir, pageNr)
+			skip, c, err := writePagesDict(ctx, *ir, pageNr)
 			if err != nil {
 				return nil, 0, err
 			}
@@ -166,30 +166,30 @@ func writeKids(ctx *Context, a Array, pageNr *int) (Array, int, error) {
 			}
 
 		case "Page":
-			*pageNr++
+			pageNr++
 			if len(ctx.Write.SelectedPages) > 0 {
 				log.Write.Printf("selectedPages: %v\n", ctx.Write.SelectedPages)
-				writePage := ctx.Write.SelectedPages[*pageNr]
+				writePage := ctx.Write.SelectedPages[pageNr]
 				if ctx.Cmd == REMOVEPAGES {
 					writePage = !writePage
 				}
 				if writePage {
-					log.Write.Printf("writeKids: writing page:%d\n", *pageNr)
-					err = writePageDict(ctx, ir, d, *pageNr)
+					log.Write.Printf("writeKids: writing page:%d\n", pageNr)
+					err = writePageDict(ctx, ir, d, pageNr)
 					kids = append(kids, o)
 					count++
 				} else {
-					log.Write.Printf("writeKids: skipping page:%d\n", *pageNr)
+					log.Write.Printf("writeKids: skipping page:%d\n", pageNr)
 				}
 			} else {
-				log.Write.Printf("writeKids: writing page anyway:%d\n", *pageNr)
-				err = writePageDict(ctx, ir, d, *pageNr)
+				log.Write.Printf("writeKids: writing page anyway:%d\n", pageNr)
+				err = writePageDict(ctx, ir, d, pageNr)
 				kids = append(kids, o)
 				count++
 			}
 
 		default:
-			err = errors.Errorf("pdfcpu: writeKids: Unexpected dict type: %s", *d.Type())
+			err = errors.Errorf("pdfcpu: writeKids: Unexpected dict type: %s", d.Type())
 
 		}
 
@@ -211,41 +211,41 @@ func containsSelectedPages(ctx *Context, from, thru int) bool {
 	return false
 }
 
-func writePagesDict(ctx *Context, ir *IndirectRef, pageNr *int) (skip bool, writtenPages int, err error) {
+func writePagesDict(ctx *Context, ir IndirectRef, pageNr int) (skip bool, writtenPages int, err error) {
 
-	log.Write.Printf("writePagesDict: begin pageNr=%d\n", *pageNr)
+	log.Write.Printf("writePagesDict: begin pageNr=%d\n", pageNr)
 
 	dictName := "pagesDict"
 	objNr := int(ir.ObjectNumber)
 	genNr := int(ir.GenerationNumber)
 
-	d, err := ctx.DereferenceDict(*ir)
+	d, err := ctx.DereferenceDict(ir)
 	if err != nil {
 		return false, 0, errors.Wrapf(err, "writePagesDict: unable to dereference indirect object #%d", objNr)
 	}
 
 	// Push count, kids.
 	countOrig, _ := d.Find("Count")
-	kidsOrig := d.ArrayEntry("Kids")
+	kidsOrig, _ := d.ArrayEntry("Kids")
 
-	if len(ctx.Write.SelectedPages) > 0 {
+	if len(ctx.Write.SelectedPages) == 0 {
+		log.Write.Println("writePagesDict: process this subtree anyway")
+	} else {
 		// EXTRACTPAGES, SPLIT, TRIM, REMOVEPAGES
 		c := int(countOrig.(Integer))
-		log.Write.Printf("writePagesDict: checking page range %d - %d \n", *pageNr+1, *pageNr+c)
+		log.Write.Printf("writePagesDict: checking page range %d - %d \n", pageNr+1, pageNr+c)
 		if ctx.Cmd == REMOVEPAGES ||
-			((ctx.Cmd == EXTRACTPAGES || ctx.Cmd == TRIM || ctx.Cmd == SPLIT) && containsSelectedPages(ctx, *pageNr+1, *pageNr+c)) {
+			((ctx.Cmd == EXTRACTPAGES || ctx.Cmd == TRIM || ctx.Cmd == SPLIT) && containsSelectedPages(ctx, pageNr+1, pageNr+c)) {
 			log.Write.Println("writePagesDict: process this subtree")
 		} else {
 			log.Write.Println("writePagesDict: skip this subtree")
-			*pageNr += c
+			pageNr += c
 			return true, 0, nil
 		}
-	} else {
-		log.Write.Println("writePagesDict: process this subtree anyway")
 	}
 
 	// Iterate over page tree.
-	kidsArray := d.ArrayEntry("Kids")
+	kidsArray, _ := d.ArrayEntry("Kids")
 	kidsNew, countNew, err := writeKids(ctx, kidsArray, pageNr)
 	if err != nil {
 		return false, 0, err
@@ -253,7 +253,7 @@ func writePagesDict(ctx *Context, ir *IndirectRef, pageNr *int) (skip bool, writ
 
 	d.Update("Kids", kidsNew)
 	d.Update("Count", Integer(countNew))
-	log.Write.Printf("writePagesDict: writing pageDict for obj=%d page=%d\n%s", objNr, *pageNr, d)
+	log.Write.Printf("writePagesDict: writing pageDict for obj=%d page=%d\n%s", objNr, pageNr, d)
 
 	if err = writeDictObject(ctx, objNr, genNr, d); err != nil {
 		return false, 0, err
@@ -278,7 +278,7 @@ func writePagesDict(ctx *Context, ir *IndirectRef, pageNr *int) (skip bool, writ
 	d.Update("Kids", kidsOrig)
 	d.Update("Count", countOrig)
 
-	log.Write.Printf("writePagesDict: end pageNr=%d\n", *pageNr)
+	log.Write.Printf("writePagesDict: end pageNr=%d\n", pageNr)
 
 	return false, countNew, nil
 }

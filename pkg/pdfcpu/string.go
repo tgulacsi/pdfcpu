@@ -62,7 +62,7 @@ func Escape(s string) (string, error) {
 
 	s1 := b.String()
 
-	return &s1, nil
+	return s1, nil
 }
 
 func escaped(c byte) (bool, byte) {

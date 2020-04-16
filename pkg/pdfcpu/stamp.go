@@ -1014,7 +1014,7 @@ func identifyObjNrs(ctx *Context, o Object, migrated map[int]int, objNrs IntSet)
 		if migrated[objNr] > 0 {
 			return nil
 		}
-		if objNr >= *ctx.Size {
+		if objNr >= ctx.Size {
 			//fmt.Printf("%d > %d(ctx.Size)\n", objNr, *ctx.Size)
 			return nil
 		}
@@ -1066,8 +1066,8 @@ func migrateObject(ctxSource, ctxDest *Context, migrated map[int]int, o Object) 
 
 	// Create a mapping from migration candidates in ctxSource to new objs in ctxDest.
 	for k := range objNrs {
-		migrated[k] = *ctxDest.Size
-		*ctxDest.Size++
+		migrated[k] = ctxDest.Size
+		ctxDest.Size++
 	}
 
 	// Patch indRefs reachable by o in ctxSource.
@@ -1201,8 +1201,8 @@ func createImageResource(xRefTable *XRefTable, r io.Reader) (*IndirectRef, int, 
 		}
 	}
 
-	w := *sd.IntEntry("Width")
-	h := *sd.IntEntry("Height")
+	w, _ := sd.IntEntry("Width")
+	h, _ := sd.IntEntry("Height")
 
 	indRef, err := xRefTable.IndRefForNewObject(*sd)
 	if err != nil {
@@ -1561,30 +1561,30 @@ func updatePageResourcesForWM(xRefTable *XRefTable, resDict Dict, wm *Watermark,
 
 	o, ok := resDict.Find("ExtGState")
 	if !ok {
-		resDict.Insert("ExtGState", Dict(map[string]Object{*gsID: *wm.extGState}))
+		resDict.Insert("ExtGState", Dict(map[string]Object{gsID: wm.extGState}))
 	} else {
 		d, _ := xRefTable.DereferenceDict(o)
 		for i := 0; i < 1000; i++ {
-			*gsID = "GS" + strconv.Itoa(i)
-			if _, found := d.Find(*gsID); !found {
+			gsID = "GS" + strconv.Itoa(i)
+			if _, found := d.Find(gsID); !found {
 				break
 			}
 		}
-		d.Insert(*gsID, *wm.extGState)
+		d.Insert(gsID, *wm.extGState)
 	}
 
 	o, ok = resDict.Find("XObject")
 	if !ok {
-		resDict.Insert("XObject", Dict(map[string]Object{*xoID: *wm.form}))
+		resDict.Insert("XObject", Dict(map[string]Object{xoID: wm.form}))
 	} else {
 		d, _ := xRefTable.DereferenceDict(o)
 		for i := 0; i < 1000; i++ {
-			*xoID = "Fm" + strconv.Itoa(i)
-			if _, found := d.Find(*xoID); !found {
+			xoID = "Fm" + strconv.Itoa(i)
+			if _, found := d.Find(xoID); !found {
 				break
 			}
 		}
-		d.Insert(*xoID, *wm.form)
+		d.Insert(xoID, *wm.form)
 	}
 
 	return nil
@@ -1758,7 +1758,7 @@ func addPageWatermark(xRefTable *XRefTable, i int, wm *Watermark) error {
 	if inhPAttrs.resources == nil {
 		err = insertPageResourcesForWM(xRefTable, d, wm, gsID, xoID)
 	} else {
-		err = updatePageResourcesForWM(xRefTable, inhPAttrs.resources, wm, &gsID, &xoID)
+		err = updatePageResourcesForWM(xRefTable, inhPAttrs.resources, wm, gsID, xoID)
 	}
 	if err != nil {
 		return err
@@ -2131,16 +2131,16 @@ func RemoveWatermarks(ctx *Context, selectedPages IntSet) error {
 			continue
 		}
 
-		if *d.Type() != "OCG" {
+		if d.Type() != "OCG" {
 			continue
 		}
 
-		n := d.StringEntry("Name")
-		if n == nil {
+		n, ok := d.StringEntry("Name")
+		if !ok {
 			continue
 		}
 
-		if *n != "Background" && *n != "Watermark" {
+		if n != "Background" && n != "Watermark" {
 			continue
 		}
 
@@ -2272,16 +2272,16 @@ func DetectWatermarks(ctx *Context) error {
 			continue
 		}
 
-		if *d.Type() != "OCG" {
+		if d.Type() != "OCG" {
 			continue
 		}
 
-		n := d.StringEntry("Name")
-		if n == nil {
+		n, ok := d.StringEntry("Name")
+		if !ok {
 			continue
 		}
 
-		if *n != "Background" && *n != "Watermark" {
+		if n != "Background" && n != "Watermark" {
 			continue
 		}
 

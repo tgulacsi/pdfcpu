@@ -167,8 +167,8 @@ func writeToObjectStream(ctx *Context, objNumber, genNumber int) (ok bool, err e
 
 		// Turn entry into a compressed entry located in object stream at index i.
 		entry.Compressed = true
-		entry.ObjectStream = ctx.Write.CurrentObjStream // !
-		entry.ObjectStreamInd = &i
+		entry.ObjectStream = *ctx.Write.CurrentObjStream // !
+		entry.ObjectStreamInd = i
 		w.SetWriteOffset(objNumber) // for a compressed obj this is supposed to be a fake offset. value does not matter.
 
 		// Append to prolog & content
@@ -290,7 +290,7 @@ func writeStringLiteralObject(ctx *Context, objNumber, genNumber int, stringLite
 			return err
 		}
 
-		sl = StringLiteral(*s1)
+		sl = StringLiteral(s1)
 	}
 
 	return writeObject(ctx, objNumber, genNumber, sl.PDFString())
@@ -315,7 +315,7 @@ func writeHexLiteralObject(ctx *Context, objNumber, genNumber int, hexLiteral He
 			return err
 		}
 
-		hl = HexLiteral(*s1)
+		hl = HexLiteral(s1)
 	}
 
 	return writeObject(ctx, objNumber, genNumber, hl.PDFString())
@@ -402,8 +402,8 @@ func writeStream(w *WriteContext, sd StreamDict) (int64, error) {
 	if err != nil {
 		return 0, errors.Wrapf(err, "writeStream: failed to write raw content")
 	}
-	if int64(c) != *sd.StreamLength {
-		return 0, errors.Errorf("writeStream: failed to write raw content: %d bytes written - streamlength:%d", c, *sd.StreamLength)
+	if int64(c) != sd.StreamLength {
+		return 0, errors.Errorf("writeStream: failed to write raw content: %d bytes written - streamlength:%d", c, sd.StreamLength)
 	}
 
 	e, err := w.WriteString("endstream")
@@ -411,12 +411,12 @@ func writeStream(w *WriteContext, sd StreamDict) (int64, error) {
 		return 0, errors.Wrapf(err, "writeStream: failed to write raw content")
 	}
 
-	written := int64(b+e) + *sd.StreamLength
+	written := int64(b+e) + sd.StreamLength
 
 	return written, nil
 }
 
-func handleIndirectLength(ctx *Context, ir *IndirectRef) error {
+func handleIndirectLength(ctx *Context, ir IndirectRef) error {
 
 	objNr := int(ir.ObjectNumber)
 	genNr := int(ir.GenerationNumber)
@@ -424,7 +424,7 @@ func handleIndirectLength(ctx *Context, ir *IndirectRef) error {
 	if ctx.Write.HasWriteOffset(objNr) {
 		log.Write.Printf("*** handleIndirectLength: object #%d already written offset=%d ***\n", objNr, ctx.Write.Offset)
 	} else {
-		length, err := ctx.DereferenceInteger(*ir)
+		length, err := ctx.DereferenceInteger(ir)
 		if err != nil || length == nil {
 			return err
 		}
@@ -449,7 +449,7 @@ func writeStreamDictObject(ctx *Context, objNumber, genNumber int, sd StreamDict
 	}
 
 	// Sometimes a streamDicts length is a reference.
-	if ir := sd.IndirectRefEntry("Length"); ir != nil {
+	if ir, ok := sd.IndirectRefEntry("Length"); ok {
 		err := handleIndirectLength(ctx, ir)
 		if err != nil {
 			return err
@@ -459,7 +459,7 @@ func writeStreamDictObject(ctx *Context, objNumber, genNumber int, sd StreamDict
 	var err error
 
 	// Unless the "Identity" crypt filter is used we have to encrypt.
-	isXRefStreamDict := sd.Type() != nil && *sd.Type() == "XRef"
+	isXRefStreamDict := sd.Type() == "XRef"
 	if ctx.EncKey != nil &&
 		!isXRefStreamDict &&
 		!(len(sd.FilterPipeline) == 1 && sd.FilterPipeline[0].Name == "Crypt") {
@@ -470,7 +470,7 @@ func writeStreamDictObject(ctx *Context, objNumber, genNumber int, sd StreamDict
 		}
 
 		l := int64(len(sd.Raw))
-		sd.StreamLength = &l
+		sd.StreamLength = l
 		sd.Update("Length", Integer(l))
 	}
 
@@ -501,7 +501,7 @@ func writeStreamDictObject(ctx *Context, objNumber, genNumber int, sd StreamDict
 	written := b + int64(h+len(pdfString)+t)
 
 	ctx.Write.Offset += written
-	ctx.Write.BinaryTotalSize += *sd.StreamLength
+	ctx.Write.BinaryTotalSize += sd.StreamLength
 
 	if inObjStream {
 		ctx.Write.WriteToObjectStream = true

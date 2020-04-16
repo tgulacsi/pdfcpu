@@ -30,14 +30,14 @@ func logWriteStats(ctx *Context) {
 
 	xRefTable := ctx.XRefTable
 
-	if len(xRefTable.Table) != *xRefTable.Size {
+	if len(xRefTable.Table) != xRefTable.Size {
 		missing, str := xRefTable.MissingObjects()
-		log.Stats.Printf("%d missing objects: %s\n", missing, *str)
+		log.Stats.Printf("%d missing objects: %s\n", missing, str)
 	}
 
 	var nonRefObjs []int
 
-	for i := 0; i < *xRefTable.Size; i++ {
+	for i := 0; i < xRefTable.Size; i++ {
 
 		entry, found := xRefTable.Find(i)
 		if !found || entry.Free || ctx.Write.HasWriteOffset(i) {
@@ -91,7 +91,7 @@ func statsHeadLine() string {
 	hl += "P_AA;P_Metadata;P_PieceInfo;P_StructParents;P_ID;P_PZ;P_SeparationInfo;P_Tabs;"
 	hl += "P_TemplateInstantiated;P_PresSteps;P_UserUnit;P_VP;\n"
 
-	return &hl
+	return hl
 }
 
 func statsLine(ctx *Context) string {
@@ -141,7 +141,7 @@ func statsLine(ctx *Context) string {
 
 	var missingObjs string
 	if count, mstr := xRefTable.MissingObjects(); count > 0 {
-		missingObjs = fmt.Sprintf("%d:%s", count, *mstr)
+		missingObjs = fmt.Sprintf("%d:%s", count, mstr)
 	}
 
 	var nonreferencedObjs string
@@ -168,7 +168,7 @@ func statsLine(ctx *Context) string {
 		ctx.Read.UsingXRefStreams,
 		ctx.Read.UsingObjectStreams,
 		xRefTable.PageCount,
-		*xRefTable.Size,
+		xRefTable.Size,
 		missingObjs,
 		nonreferencedObjs,
 		xRefTable.Stats.UsesRootAttr(RootVersion),
@@ -227,7 +227,7 @@ func statsLine(ctx *Context) string {
 		xRefTable.Stats.UsesPageAttr(PageUserUnit),
 		xRefTable.Stats.UsesPageAttr(PageVP))
 
-	return &line
+	return line
 }
 
 // AppendStatsFile appends a stats line for this xRefTable to the configured csv file name.
@@ -248,7 +248,7 @@ func AppendStatsFile(ctx *Context) error {
 			return errors.Errorf("can't create %s\n%s", fileName, err)
 		}
 
-		_, err = file.WriteString(*statsHeadLine())
+		_, err = file.WriteString(statsHeadLine())
 		if err != nil {
 			return err
 		}
@@ -259,7 +259,7 @@ func AppendStatsFile(ctx *Context) error {
 		file.Close()
 	}()
 
-	_, err = file.WriteString(*statsLine(ctx))
+	_, err = file.WriteString(statsLine(ctx))
 
 	return err
 }

@@ -58,8 +58,8 @@ func (fo FontObject) ResourceNamesString() string {
 // SubType returns the SubType of this font.
 func (fo FontObject) SubType() string {
 	var subType string
-	if fo.FontDict.Subtype() != nil {
-		subType = *fo.FontDict.Subtype()
+	if fo.FontDict.Subtype() != "" {
+		subType = fo.FontDict.Subtype()
 	}
 	return subType
 }
