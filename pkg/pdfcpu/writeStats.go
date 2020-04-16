@@ -78,7 +78,7 @@ func logWriteStats(ctx *Context) {
 	log.Stats.Printf("%d original linearization entries: %s", l, str)
 }
 
-func statsHeadLine() *string {
+func statsHeadLine() string {
 
 	hl := "name;version;author;creator;producer;src_size (bin|text);src_bin:imgs|fonts|other;dest_size (bin|text);dest_bin:imgs|fonts|other;"
 	hl += "linearized;hybrid;xrefstr;objstr;pages;objs;missing;garbage;"
@@ -94,7 +94,7 @@ func statsHeadLine() *string {
 	return &hl
 }
 
-func statsLine(ctx *Context) *string {
+func statsLine(ctx *Context) string {
 
 	xRefTable := ctx.XRefTable
 

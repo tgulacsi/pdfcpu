@@ -26,15 +26,15 @@ import (
 // Command represents an execution context.
 type Command struct {
 	Mode          pdf.CommandMode
-	InFile        *string
+	InFile        string
 	InFiles       []string
-	InDir         *string
-	OutFile       *string
-	OutDir        *string
+	InDir         string
+	OutFile       string
+	OutDir        string
 	PageSelection []string
 	Conf          *pdf.Configuration
-	PWOld         *string
-	PWNew         *string
+	PWOld         string
+	PWNew         string
 	Watermark     *pdf.Watermark
 	Span          int
 	Import        *pdf.Import
@@ -354,7 +354,7 @@ func DecryptCommand(inFile, outFile string, conf *pdf.Configuration) *Command {
 }
 
 // ChangeUserPWCommand creates a new command to change the user password.
-func ChangeUserPWCommand(inFile, outFile string, pwOld, pwNew *string, conf *pdf.Configuration) *Command {
+func ChangeUserPWCommand(inFile, outFile string, pwOld, pwNew string, conf *pdf.Configuration) *Command {
 	if conf == nil {
 		conf = pdf.NewDefaultConfiguration()
 	}
@@ -369,7 +369,7 @@ func ChangeUserPWCommand(inFile, outFile string, pwOld, pwNew *string, conf *pdf
 }
 
 // ChangeOwnerPWCommand creates a new command to change the owner password.
-func ChangeOwnerPWCommand(inFile, outFile string, pwOld, pwNew *string, conf *pdf.Configuration) *Command {
+func ChangeOwnerPWCommand(inFile, outFile string, pwOld, pwNew string, conf *pdf.Configuration) *Command {
 	if conf == nil {
 		conf = pdf.NewDefaultConfiguration()
 	}

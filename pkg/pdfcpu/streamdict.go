@@ -34,8 +34,8 @@ type PDFFilter struct {
 type StreamDict struct {
 	Dict
 	StreamOffset      int64
-	StreamLength      *int64
-	StreamLengthObjNr *int
+	StreamLength      int64
+	StreamLengthObjNr int
 	FilterPipeline    []PDFFilter
 	Raw               []byte // Encoded
 	Content           []byte // Decoded
@@ -43,7 +43,7 @@ type StreamDict struct {
 }
 
 // NewStreamDict creates a new PDFStreamDict for given PDFDict, stream offset and length.
-func NewStreamDict(d Dict, streamOffset int64, streamLength *int64, streamLengthObjNr *int, filterPipeline []PDFFilter) StreamDict {
+func NewStreamDict(d Dict, streamOffset int64, streamLength int64, streamLengthObjNr int, filterPipeline []PDFFilter) StreamDict {
 	return StreamDict{
 		d,
 		streamOffset,
@@ -138,7 +138,7 @@ type XRefStreamDict struct {
 	Size           int
 	Objects        []int
 	W              [3]int
-	PreviousOffset *int64
+	PreviousOffset int64
 }
 
 // NewXRefStreamDict creates a new PDFXRefStreamDict object.

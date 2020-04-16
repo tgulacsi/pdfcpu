@@ -515,22 +515,22 @@ func validateOwnerPassword(ctx *Context) (ok bool, err error) {
 // SupportedCFEntry returns true if all entries found are supported.
 func supportedCFEntry(d Dict) (bool, error) {
 
-	cfm := d.NameEntry("CFM")
-	if cfm != nil && *cfm != "V2" && *cfm != "AESV2" && *cfm != "AESV3" {
+	cfm, ok := d.NameEntry("CFM")
+	if ok && cfm != "V2" && cfm != "AESV2" && cfm != "AESV3" {
 		return false, errors.New("pdfcpu: supportedCFEntry: invalid entry \"CFM\"")
 	}
 
-	ae := d.NameEntry("AuthEvent")
-	if ae != nil && *ae != "DocOpen" {
+	ae, ok := d.NameEntry("AuthEvent")
+	if ok && ae != "DocOpen" {
 		return false, errors.New("pdfcpu: supportedCFEntry: invalid entry \"AuthEvent\"")
 	}
 
-	l := d.IntEntry("Length")
-	if l != nil && (*l < 5 || *l > 16) && *l != 32 {
+	l, ok := d.IntEntry("Length")
+	if ok && (l < 5 || l > 16) && l != 32 {
 		return false, errors.New("pdfcpu: supportedCFEntry: invalid entry \"Length\"")
 	}
 
-	return cfm != nil && (*cfm == "AESV2" || *cfm == "AESV3"), nil
+	return cfm != "" && (cfm == "AESV2" || cfm == "AESV3"), nil
 }
 
 func perms(p int) (list []string) {
@@ -686,28 +686,28 @@ func hasNeededPermissions(mode CommandMode, enc *Enc) bool {
 	return true
 }
 
-func getV(d Dict) (*int, error) {
+func getV(d Dict) (int, error) {
 
-	v := d.IntEntry("V")
+	v, ok := d.IntEntry("V")
 
-	if v == nil || (*v != 1 && *v != 2 && *v != 4 && *v != 5) {
-		return nil, errors.Errorf("getV: \"V\" must be one of 1,2,4,5")
+	if !ok || (v != 1 && v != 2 && v != 4 && v != 5) {
+		return 0, errors.Errorf("getV: \"V\" must be one of 1,2,4,5")
 	}
 
 	return v, nil
 }
-func checkStmf(ctx *Context, stmf *string, cfDict Dict) error {
+func checkStmf(ctx *Context, stmf string, cfDict Dict) error {
 
-	if stmf != nil && *stmf != "Identity" {
+	if stmf != "" && stmf != "Identity" {
 
-		d := cfDict.DictEntry(*stmf)
-		if d == nil {
-			return errors.Errorf("pdfcpu: checkStmf: entry \"%s\" missing in \"CF\"", *stmf)
+		d, ok := cfDict.DictEntry(stmf)
+		if !ok {
+			return errors.Errorf("pdfcpu: checkStmf: entry \"%s\" missing in \"CF\"", stmf)
 		}
 
 		aes, err := supportedCFEntry(d)
 		if err != nil {
-			return errors.Wrapf(err, "pdfcpu: checkStmv: unsupported \"%s\" entry in \"CF\"", *stmf)
+			return errors.Wrapf(err, "pdfcpu: checkStmv: unsupported \"%s\" entry in \"CF\"", stmf)
 		}
 		ctx.AES4Streams = aes
 	}
@@ -715,55 +715,55 @@ func checkStmf(ctx *Context, stmf *string, cfDict Dict) error {
 	return nil
 }
 
-func checkV(ctx *Context, d Dict) (*int, error) {
+func checkV(ctx *Context, d Dict) (int, error) {
 
 	v, err := getV(d)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	// v == 2 implies RC4
-	if *v != 4 && *v != 5 {
+	if v != 4 && v != 5 {
 		return v, nil
 	}
 
 	// CF
-	cfDict := d.DictEntry("CF")
-	if cfDict == nil {
-		return nil, errors.Errorf("pdfcpu: checkV: required entry \"CF\" missing.")
+	cfDict, ok := d.DictEntry("CF")
+	if !ok {
+		return 0, errors.Errorf("pdfcpu: checkV: required entry \"CF\" missing.")
 	}
 
 	// StmF
-	stmf := d.NameEntry("StmF")
+	stmf, _ := d.NameEntry("StmF")
 	err = checkStmf(ctx, stmf, cfDict)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	// StrF
-	strf := d.NameEntry("StrF")
-	if strf != nil && *strf != "Identity" {
-		d1 := cfDict.DictEntry(*strf)
-		if d1 == nil {
-			return nil, errors.Errorf("pdfcpu: checkV: entry \"%s\" missing in \"CF\"", *strf)
+	strf, ok := d.NameEntry("StrF")
+	if !ok && strf != "Identity" {
+		d1, ok := cfDict.DictEntry(strf)
+		if !ok {
+			return 0, errors.Errorf("pdfcpu: checkV: entry \"%s\" missing in \"CF\"", strf)
 		}
 		aes, err := supportedCFEntry(d1)
 		if err != nil {
-			return nil, errors.Wrapf(err, "checkV: unsupported \"%s\" entry in \"CF\"", *strf)
+			return 0, errors.Wrapf(err, "checkV: unsupported \"%s\" entry in \"CF\"", strf)
 		}
 		ctx.AES4Strings = aes
 	}
 
 	// EFF
-	eff := d.NameEntry("EFF")
-	if eff != nil && *strf != "Identity" {
-		d := cfDict.DictEntry(*eff)
-		if d == nil {
-			return nil, errors.Errorf("pdfcpu: checkV: entry \"%s\" missing in \"CF\"", *eff)
+	eff, ok := d.NameEntry("EFF")
+	if ok && eff != "Identity" {
+		d, ok := cfDict.DictEntry(eff)
+		if !ok {
+			return 0, errors.Errorf("pdfcpu: checkV: entry \"%s\" missing in \"CF\"", eff)
 		}
 		aes, err := supportedCFEntry(d)
 		if err != nil {
-			return nil, errors.Wrapf(err, "checkV: unsupported \"%s\" entry in \"CF\"", *strf)
+			return 0, errors.Wrapf(err, "checkV: unsupported \"%s\" entry in \"CF\"", eff)
 		}
 		ctx.AES4EmbeddedStreams = aes
 	}
@@ -773,29 +773,29 @@ func checkV(ctx *Context, d Dict) (*int, error) {
 
 func length(d Dict) (int, error) {
 
-	l := d.IntEntry("Length")
-	if l == nil {
+	l, ok := d.IntEntry("Length")
+	if !ok {
 		return 40, nil
 	}
 
-	if (*l < 40 || *l > 128 || *l%8 > 0) && *l != 256 {
-		return 0, errors.Errorf("pdfcpu: length: \"Length\" %d not supported\n", *l)
+	if (l < 40 || l > 128 || l%8 > 0) && l != 256 {
+		return 0, errors.Errorf("pdfcpu: length: \"Length\" %d not supported\n", l)
 	}
 
-	return *l, nil
+	return l, nil
 }
 
 func getR(d Dict) (int, error) {
 
-	r := d.IntEntry("R")
-	if r == nil || *r < 2 || *r > 5 {
-		if *r > 5 {
+	r, ok := d.IntEntry("R")
+	if !ok || r < 2 || r > 5 {
+		if r > 5 {
 			return 0, errors.New("pdfcpu: PDF 2.0 encryption not supported")
 		}
 		return 0, errors.New("pdfcpu: encryption: \"R\" must be 2,3,4,5")
 	}
 
-	return *r, nil
+	return r, nil
 }
 
 func validateAlgorithm(ctx *Context) (ok bool) {
@@ -881,13 +881,13 @@ func validateOAndU(d Dict) (o, u []byte, err error) {
 func supportedEncryption(ctx *Context, d Dict) (*Enc, error) {
 
 	// Filter
-	filter := d.NameEntry("Filter")
-	if filter == nil || *filter != "Standard" {
+	filter, ok := d.NameEntry("Filter")
+	if !ok || filter != "Standard" {
 		return nil, errors.New("pdfcpu: unsupported encryption: filter must be \"Standard\"")
 	}
 
 	// SubFilter
-	if d.NameEntry("SubFilter") != nil {
+	if _, ok := d.NameEntry("SubFilter"); !ok {
 		return nil, errors.New("pdfcpu: unsupported encryption: \"SubFilter\" not supported")
 	}
 
@@ -923,16 +923,16 @@ func supportedEncryption(ctx *Context, d Dict) (*Enc, error) {
 	}
 
 	// P
-	p := d.IntEntry("P")
-	if p == nil {
+	p, ok := d.IntEntry("P")
+	if !ok {
 		return nil, errors.New("pdfcpu: unsupported encryption: required entry \"P\" missing")
 	}
 
 	// EncryptMetadata
 	encMeta := true
-	emd := d.BooleanEntry("EncryptMetadata")
-	if emd != nil {
-		encMeta = *emd
+	emd, ok := d.BooleanEntry("EncryptMetadata")
+	if !ok {
+		encMeta = emd
 	}
 
 	return &Enc{
@@ -941,10 +941,10 @@ func supportedEncryption(ctx *Context, d Dict) (*Enc, error) {
 			U:     u,
 			UE:    ue,
 			L:     l,
-			P:     *p,
+			P:     p,
 			Perms: perms,
 			R:     r,
-			V:     *v,
+			V:     v,
 			Emd:   encMeta},
 		nil
 }
@@ -996,16 +996,16 @@ func encryptBytes(b []byte, objNr, genNr int, encKey []byte, needAES bool, r int
 }
 
 // EncryptString encrypts s using RC4 or AES.
-func encryptString(s string, objNr, genNr int, key []byte, needAES bool, r int) (*string, error) {
+func encryptString(s string, objNr, genNr int, key []byte, needAES bool, r int) (string, error) {
 
 	b, err := encryptBytes([]byte(s), objNr, genNr, key, needAES, r)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	s1, err := Escape(string(b))
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	return s1, err
@@ -1030,20 +1030,19 @@ func decryptBytes(b []byte, objNr, genNr int, encKey []byte, needAES bool, r int
 }
 
 // decryptString decrypts s using RC4 or AES.
-func decryptString(s string, objNr, genNr int, key []byte, needAES bool, r int) (*string, error) {
+func decryptString(s string, objNr, genNr int, key []byte, needAES bool, r int) (string, error) {
 
 	b, err := Unescape(s)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	b, err = decryptBytes(b, objNr, genNr, key, needAES, r)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	s1 := string(b)
-	return &s1, nil
+	return string(b), nil
 }
 
 func applyRC4CipherBytes(b []byte, objNr, genNr int, key []byte, needAES bool) ([]byte, error) {
@@ -1142,11 +1141,11 @@ func encryptDeepObject(objIn Object, objNr, genNr int, key []byte, needAES bool,
 }
 
 // DecryptDeepObject recurses over non trivial PDF objects and decrypts all strings encountered.
-func decryptDeepObject(objIn Object, objNr, genNr int, key []byte, needAES bool, r int) (*StringLiteral, error) {
+func decryptDeepObject(objIn Object, objNr, genNr int, key []byte, needAES bool, r int) (StringLiteral, error) {
 
 	_, ok := objIn.(IndirectRef)
 	if ok {
-		return nil, nil
+		return "", nil
 	}
 
 	switch obj := objIn.(type) {
@@ -1155,10 +1154,10 @@ func decryptDeepObject(objIn Object, objNr, genNr int, key []byte, needAES bool,
 		for k, v := range obj {
 			s, err := decryptDeepObject(v, objNr, genNr, key, needAES, r)
 			if err != nil {
-				return nil, err
+				return "", err
 			}
-			if s != nil {
-				obj[k] = *s
+			if s != "" {
+				obj[k] = s
 			}
 		}
 
@@ -1166,34 +1165,32 @@ func decryptDeepObject(objIn Object, objNr, genNr int, key []byte, needAES bool,
 		for i, v := range obj {
 			s, err := decryptDeepObject(v, objNr, genNr, key, needAES, r)
 			if err != nil {
-				return nil, err
+				return "", err
 			}
-			if s != nil {
-				obj[i] = *s
+			if s != "" {
+				obj[i] = s
 			}
 		}
 
 	case StringLiteral:
 		s, err := decryptString(obj.Value(), objNr, genNr, key, needAES, r)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
-		sl := StringLiteral(*s)
-		return &sl, nil
+		return StringLiteral(s), nil
 
 	case HexLiteral:
 		bb, err := decryptHexLiteral(obj, objNr, genNr, key, needAES, r)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
-		sl := StringLiteral(string(bb))
-		return &sl, nil
+		return StringLiteral(string(bb)), nil
 
 	default:
 
 	}
 
-	return nil, nil
+	return "", nil
 }
 
 // EncryptStream encrypts a stream buffer using RC4 or AES.

@@ -135,8 +135,8 @@ func patchObjects(s IntSet, lookup map[int]int) IntSet {
 
 func patchSourceObjectNumbers(ctxSource, ctxDest *Context) {
 
-	log.Debug.Printf("patchSourceObjectNumbers: ctxSource: xRefTableSize:%d trailer.Size:%d - %s\n", len(ctxSource.Table), *ctxSource.Size, ctxSource.Read.FileName)
-	log.Debug.Printf("patchSourceObjectNumbers:   ctxDest: xRefTableSize:%d trailer.Size:%d - %s\n", len(ctxDest.Table), *ctxDest.Size, ctxDest.Read.FileName)
+	log.Debug.Printf("patchSourceObjectNumbers: ctxSource: xRefTableSize:%d trailer.Size:%d - %s\n", len(ctxSource.Table), ctxSource.Size, ctxSource.Read.FileName)
+	log.Debug.Printf("patchSourceObjectNumbers:   ctxDest: xRefTableSize:%d trailer.Size:%d - %s\n", len(ctxDest.Table), ctxDest.Size, ctxDest.Read.FileName)
 
 	// Patch source xref tables obj numbers which are essentially the keys.
 	//logInfoMerge.Printf("Source XRefTable before:\n%s\n", ctxSource)
@@ -145,7 +145,7 @@ func patchSourceObjectNumbers(ctxSource, ctxDest *Context) {
 
 	// Create lookup table for object numbers.
 	// The first number is the successor of the last number in ctxDest.
-	lookup := lookupTable(objNrs, *ctxDest.Size)
+	lookup := lookupTable(objNrs, ctxDest.Size)
 
 	// Patch pointer to root object
 	patchIndRef(ctxSource.Root, lookup)
@@ -157,10 +157,10 @@ func patchSourceObjectNumbers(ctxSource, ctxDest *Context) {
 
 	// Patch free object zero
 	entry := ctxSource.Table[0]
-	off := int(*entry.Offset)
+	off := int(entry.Offset)
 	if off != 0 {
 		i := int64(lookup[off])
-		entry.Offset = &i
+		entry.Offset = i
 	}
 
 	// Patch all indRefs for xref table entries.
@@ -171,14 +171,14 @@ func patchSourceObjectNumbers(ctxSource, ctxDest *Context) {
 		entry := ctxSource.Table[k]
 
 		if entry.Free {
-			log.Debug.Printf("patch free entry: old offset:%d\n", *entry.Offset)
-			off := int(*entry.Offset)
+			log.Debug.Printf("patch free entry: old offset:%d\n", entry.Offset)
+			off := int(entry.Offset)
 			if off == 0 {
 				continue
 			}
 			i := int64(lookup[off])
-			entry.Offset = &i
-			log.Debug.Printf("patch free entry: new offset:%d\n", *entry.Offset)
+			entry.Offset = i
+			log.Debug.Printf("patch free entry: new offset:%d\n", entry.Offset)
 			continue
 		}
 
@@ -186,7 +186,7 @@ func patchSourceObjectNumbers(ctxSource, ctxDest *Context) {
 	}
 
 	// Patch xref entry object numbers.
-	m := make(map[int]*XRefTableEntry, *ctxSource.Size)
+	m := make(map[int]*XRefTableEntry, ctxSource.Size)
 	for k, v := range lookup {
 		m[v] = ctxSource.Table[k]
 	}
@@ -218,7 +218,7 @@ func appendSourcePageTreeToDestPageTree(ctxSource, ctxDest *Context) error {
 	}
 
 	pageTreeRootDictSource, _ := ctxSource.XRefTable.DereferenceDict(*indRefPageTreeRootDictSource)
-	pageCountSource := pageTreeRootDictSource.IntEntry("Count")
+	pageCountSource, _ := pageTreeRootDictSource.IntEntry("Count")
 
 	indRefPageTreeRootDictDest, err := ctxDest.Pages()
 	if err != nil {
@@ -226,9 +226,9 @@ func appendSourcePageTreeToDestPageTree(ctxSource, ctxDest *Context) error {
 	}
 
 	pageTreeRootDictDest, _ := ctxDest.XRefTable.DereferenceDict(*indRefPageTreeRootDictDest)
-	pageCountDest := pageTreeRootDictDest.IntEntry("Count")
+	pageCountDest, _ := pageTreeRootDictDest.IntEntry("Count")
 
-	a := pageTreeRootDictDest.ArrayEntry("Kids")
+	a, _ := pageTreeRootDictDest.ArrayEntry("Kids")
 	log.Debug.Printf("Kids before: %v\n", a)
 
 	pageTreeRootDictSource.Insert("Parent", *indRefPageTreeRootDictDest)
@@ -237,7 +237,7 @@ func appendSourcePageTreeToDestPageTree(ctxSource, ctxDest *Context) error {
 	a = append(a, *indRefPageTreeRootDictSource)
 	log.Debug.Printf("Kids after: %v\n", a)
 
-	pageTreeRootDictDest.Update("Count", Integer(*pageCountDest+*pageCountSource))
+	pageTreeRootDictDest.Update("Count", Integer(pageCountDest+pageCountSource))
 	pageTreeRootDictDest.Update("Kids", a)
 
 	ctxDest.PageCount += ctxSource.PageCount
@@ -262,7 +262,7 @@ func appendSourceObjectsToDest(ctxSource, ctxDest *Context) {
 
 		ctxDest.Table[objNr] = entry
 
-		*ctxDest.Size++
+		ctxDest.Size++
 
 	}
 

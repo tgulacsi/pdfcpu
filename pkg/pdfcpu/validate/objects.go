@@ -187,7 +187,7 @@ func validateDateObject(xRefTable *pdf.XRefTable, o pdf.Object, sinceVersion pdf
 	return s.Value(), nil
 }
 
-func validateDateEntry(xRefTable *pdf.XRefTable, d pdf.Dict, dictName, entryName string, required bool, sinceVersion pdf.Version) (*string, error) {
+func validateDateEntry(xRefTable *pdf.XRefTable, d pdf.Dict, dictName, entryName string, required bool, sinceVersion pdf.Version) (string, error) {
 
 	log.Validate.Printf("validateDateEntry begin: entry=%s\n", entryName)
 
@@ -1009,7 +1009,7 @@ func validateString(xRefTable *pdf.XRefTable, o pdf.Object, validate func(string
 	return s, nil
 }
 
-func validateStringEntry(xRefTable *pdf.XRefTable, d pdf.Dict, dictName, entryName string, required bool, sinceVersion pdf.Version, validate func(string) bool) (*string, error) {
+func validateStringEntry(xRefTable *pdf.XRefTable, d pdf.Dict, dictName, entryName string, required bool, sinceVersion pdf.Version, validate func(string) bool) (string, error) {
 
 	log.Validate.Printf("validateStringEntry begin: entry=%s\n", entryName)
 

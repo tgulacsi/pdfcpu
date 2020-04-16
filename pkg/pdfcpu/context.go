@@ -97,7 +97,7 @@ func (ctx *Context) String() string {
 	}
 
 	logStr = append(logStr, "XRefTable:\n")
-	logStr = append(logStr, fmt.Sprintf("                     Size: %d\n", *ctx.XRefTable.Size))
+	logStr = append(logStr, fmt.Sprintf("                     Size: %d\n", ctx.XRefTable.Size))
 	logStr = append(logStr, fmt.Sprintf("              Root object: %s\n", *ctx.Root))
 
 	if ctx.Info != nil {
@@ -136,10 +136,10 @@ func (ctx *Context) String() string {
 	}
 
 	// Print list of any missing objects.
-	if len(ctx.XRefTable.Table) < *ctx.XRefTable.Size {
+	if len(ctx.XRefTable.Table) < ctx.XRefTable.Size {
 		missing, s := ctx.MissingObjects()
 		if missing > 0 {
-			logStr = append(logStr, fmt.Sprintf("%d missing objects: %s\n", missing, *s))
+			logStr = append(logStr, fmt.Sprintf("%d missing objects: %s\n", missing, s))
 		}
 	}
 

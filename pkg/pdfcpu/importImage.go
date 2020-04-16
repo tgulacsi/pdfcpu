@@ -314,8 +314,8 @@ func ParseImportDetails(s string) (*Import, error) {
 
 // AppendPageTree appends a pagetree d1 to page tree d2.
 func AppendPageTree(d1 *IndirectRef, countd1 int, d2 Dict) error {
-	a := d2.ArrayEntry("Kids")
-	a = append(a, *d1)
+	a, _ := d2.ArrayEntry("Kids")
+	a = append(a, d1)
 	d2.Update("Kids", a)
 	return d2.IncrementBy("Count", countd1)
 }

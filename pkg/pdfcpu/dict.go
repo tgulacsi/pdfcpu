@@ -107,268 +107,248 @@ func (d Dict) Entry(dictName, key string, required bool) (Object, error) {
 }
 
 // BooleanEntry expects and returns a BooleanEntry for given key.
-func (d Dict) BooleanEntry(key string) *bool {
+func (d Dict) BooleanEntry(key string) (value bool, ok bool) {
 
-	value, found := d.Find(key)
+	v, found := d.Find(key)
 	if !found {
-		return nil
+		return false, false
 	}
 
-	bb, ok := value.(Boolean)
+	bb, ok := v.(Boolean)
 	if ok {
-		b := bb.Value()
-		return &b
+		return bb.Value(), true
 	}
 
-	return nil
+	return false, false
 }
 
 // StringEntry expects and returns a StringLiteral entry for given key.
 // Unused.
-func (d Dict) StringEntry(key string) *string {
+func (d Dict) StringEntry(key string) (string, bool) {
 
 	value, found := d.Find(key)
 	if !found {
-		return nil
+		return "", false
 	}
 
 	pdfStr, ok := value.(StringLiteral)
 	if ok {
-		s := string(pdfStr)
-		return &s
+		return string(pdfStr), true
 	}
 
-	return nil
+	return "", false
 }
 
 // NameEntry expects and returns a Name entry for given key.
-func (d Dict) NameEntry(key string) *string {
+func (d Dict) NameEntry(key string) (string, bool) {
 
 	value, found := d.Find(key)
 	if !found {
-		return nil
+		return "", false
 	}
 
 	Name, ok := value.(Name)
 	if ok {
-		s := string(Name)
-		return &s
+		return string(Name), true
 	}
 
-	return nil
+	return "", false
 }
 
 // IntEntry expects and returns a Integer entry for given key.
-func (d Dict) IntEntry(key string) *int {
+func (d Dict) IntEntry(key string) (int, bool) {
 
 	value, found := d.Find(key)
 	if !found {
-		return nil
+		return 0, false
 	}
 
 	pdfInt, ok := value.(Integer)
 	if ok {
-		i := int(pdfInt)
-		return &i
+		return int(pdfInt), true
 	}
 
-	return nil
+	return 0, false
 }
 
 // Int64Entry expects and returns a Integer entry representing an int64 value for given key.
-func (d Dict) Int64Entry(key string) *int64 {
+func (d Dict) Int64Entry(key string) (int64, bool) {
 
 	value, found := d.Find(key)
 	if !found {
-		return nil
+		return 0, false
 	}
 
 	pdfInt, ok := value.(Integer)
 	if ok {
-		i := int64(pdfInt)
-		return &i
+		return int64(pdfInt), true
 	}
 
-	return nil
+	return 0, false
 }
 
 // IndirectRefEntry returns an indirectRefEntry for given key for this dictionary.
-func (d Dict) IndirectRefEntry(key string) *IndirectRef {
+func (d Dict) IndirectRefEntry(key string) (ref IndirectRef, ok bool) {
 
 	value, found := d.Find(key)
 	if !found {
-		return nil
+		return ref, false
 	}
 
-	pdfIndRef, ok := value.(IndirectRef)
-	if ok {
-		return &pdfIndRef
-	}
-
-	// return err?
-	return nil
+	ref, ok = value.(IndirectRef)
+	return ref, ok
 }
 
 // DictEntry expects and returns a PDFDict entry for given key.
-func (d Dict) DictEntry(key string) Dict {
+func (d Dict) DictEntry(key string) (Dict, bool) {
 
 	value, found := d.Find(key)
 	if !found {
-		return nil
+		return nil, false
 	}
 
 	// TODO resolve indirect ref.
 
 	d, ok := value.(Dict)
 	if ok {
-		return d
+		return d, true
 	}
 
-	return nil
+	return nil, false
 }
 
 // StreamDictEntry expects and returns a StreamDict entry for given key.
 // unused.
-func (d Dict) StreamDictEntry(key string) *StreamDict {
+func (d Dict) StreamDictEntry(key string) (dict StreamDict, ok bool) {
 
 	value, found := d.Find(key)
 	if !found {
-		return nil
+		return dict, false
 	}
 
-	sd, ok := value.(StreamDict)
-	if ok {
-		return &sd
-	}
-
-	return nil
+	dict, ok = value.(StreamDict)
+	return dict, ok
 }
 
 // ArrayEntry expects and returns a Array entry for given key.
-func (d Dict) ArrayEntry(key string) Array {
+func (d Dict) ArrayEntry(key string) (array Array, ok bool) {
 
 	value, found := d.Find(key)
 	if !found {
-		return nil
+		return array, false
 	}
 
-	a, ok := value.(Array)
-	if ok {
-		return a
-	}
-
-	return nil
+	array, ok = value.(Array)
+	return array, ok
 }
 
 // StringLiteralEntry returns a StringLiteral object for given key.
-func (d Dict) StringLiteralEntry(key string) *StringLiteral {
+func (d Dict) StringLiteralEntry(key string) (s StringLiteral, ok bool) {
 
 	value, found := d.Find(key)
 	if !found {
-		return nil
+		return s, false
 	}
 
-	s, ok := value.(StringLiteral)
-	if ok {
-		return &s
-	}
-
-	return nil
+	s, ok = value.(StringLiteral)
+	return s, ok
 }
 
 // HexLiteralEntry returns a HexLiteral object for given key.
-func (d Dict) HexLiteralEntry(key string) *HexLiteral {
+func (d Dict) HexLiteralEntry(key string) (hex HexLiteral, ok bool) {
 
 	value, found := d.Find(key)
 	if !found {
-		return nil
+		return hex, false
 	}
 
-	s, ok := value.(HexLiteral)
-	if ok {
-		return &s
-	}
-
-	return nil
+	hex, ok = value.(HexLiteral)
+	return hex, ok
 }
 
-// Length returns a *int64 for entry with key "Length".
+// Length returns a int64 for entry with key "Length".
 // Stream length may be referring to an indirect object.
-func (d Dict) Length() (*int64, *int) {
+func (d Dict) Length() (int64, int, bool) {
 
-	val := d.Int64Entry("Length")
-	if val != nil {
-		return val, nil
+	val, ok := d.Int64Entry("Length")
+	if ok {
+		return val, 0, true
 	}
 
-	indirectRef := d.IndirectRefEntry("Length")
-	if indirectRef == nil {
-		return nil, nil
+	indirectRef, ok := d.IndirectRefEntry("Length")
+	if !ok {
+		return 0, 0, false
 	}
 
 	intVal := indirectRef.ObjectNumber.Value()
 
-	return nil, &intVal
+	return 0, intVal, true
 }
 
 // Type returns the value of the name entry for key "Type".
-func (d Dict) Type() *string {
-	return d.NameEntry("Type")
+func (d Dict) Type() string {
+	s, _ := d.NameEntry("Type")
+	return s
 }
 
 // Subtype returns the value of the name entry for key "Subtype".
-func (d Dict) Subtype() *string {
-	return d.NameEntry("Subtype")
+func (d Dict) Subtype() string {
+	s, _ := d.NameEntry("Subtype")
+	return s
 }
 
 // Size returns the value of the int entry for key "Size"
-func (d Dict) Size() *int {
-	return d.IntEntry("Size")
+func (d Dict) Size() int {
+	i, _ := d.IntEntry("Size")
+	return i
 }
 
 // IsObjStm returns true if given PDFDict is an object stream.
 func (d Dict) IsObjStm() bool {
-	return d.Type() != nil && *d.Type() == "ObjStm"
+	return d.Type() == "ObjStm"
 }
 
-// W returns a *Array for key "W".
-func (d Dict) W() Array {
+// W returns a Array for key "W".
+func (d Dict) W() (Array, bool) {
 	return d.ArrayEntry("W")
 }
 
 // Prev returns the previous offset.
-func (d Dict) Prev() *int64 {
-	return d.Int64Entry("Prev")
+func (d Dict) Prev() int64 {
+	i, _ := d.Int64Entry("Prev")
+	return i
 }
 
 // Index returns a *Array for key "Index".
-func (d Dict) Index() Array {
+func (d Dict) Index() (Array, bool) {
 	return d.ArrayEntry("Index")
 }
 
 // N returns a *int for key "N".
-func (d Dict) N() *int {
-	return d.IntEntry("N")
+func (d Dict) N() int {
+	i, _ := d.IntEntry("N")
+	return i
 }
 
-// First returns a *int for key "First".
-func (d Dict) First() *int {
+// First returns a int for key "First".
+func (d Dict) First() (int, bool) {
 	return d.IntEntry("First")
 }
 
 // IsLinearizationParmDict returns true if this dict has an int entry for key "Linearized".
 func (d Dict) IsLinearizationParmDict() bool {
-	return d.IntEntry("Linearized") != nil
+	_, ok := d.IntEntry("Linearized")
+	return ok
 }
 
 // IncrementBy increments the integer value for given key by i.
 func (d *Dict) IncrementBy(key string, i int) error {
-	v := d.IntEntry(key)
-	if v == nil {
+	v, ok := d.IntEntry(key)
+	if !ok {
 		return errors.Errorf("IncrementBy: unknown key: %s", key)
 	}
-	*v += i
-	d.Update(key, Integer(*v))
+	v += i
+	d.Update(key, Integer(v))
 	return nil
 }
 
@@ -502,13 +482,13 @@ func (d Dict) String() string {
 // StringEntryBytes returns the byte slice representing the string value for key.
 func (d Dict) StringEntryBytes(key string) ([]byte, error) {
 
-	s := d.StringLiteralEntry(key)
-	if s != nil {
+	s, ok := d.StringLiteralEntry(key)
+	if ok {
 		return Unescape(s.Value())
 	}
 
-	h := d.HexLiteralEntry(key)
-	if h != nil {
+	h, ok := d.HexLiteralEntry(key)
+	if ok {
 		return h.Bytes()
 	}
 

@@ -1557,7 +1557,7 @@ func insertPageResourcesForWM(xRefTable *XRefTable, pageDict Dict, wm *Watermark
 	return nil
 }
 
-func updatePageResourcesForWM(xRefTable *XRefTable, resDict Dict, wm *Watermark, gsID, xoID *string) error {
+func updatePageResourcesForWM(xRefTable *XRefTable, resDict Dict, wm *Watermark, gsID, xoID string) error {
 
 	o, ok := resDict.Find("ExtGState")
 	if !ok {

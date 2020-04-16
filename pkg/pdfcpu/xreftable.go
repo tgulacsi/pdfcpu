@@ -38,8 +38,8 @@ import (
 // Array, Integer, Float, Name, StringLiteral, HexLiteral, Boolean
 type XRefTableEntry struct {
 	Free            bool
-	Offset          *int64
-	Generation      *int
+	Offset          int64
+	Generation      int
 	RefCount        int
 	Object          Object
 	Compressed      bool
@@ -80,7 +80,7 @@ type Enc struct {
 // XRefTable represents a PDF cross reference table plus stats for a PDF file.
 type XRefTable struct {
 	Table               map[int]*XRefTableEntry
-	Size                *int             // Object count from PDF trailer dict.
+	Size                int              // Object count from PDF trailer dict.
 	PageCount           int              // Number of pages.
 	Root                *IndirectRef     // Pointer to catalog (reference to root object).
 	RootDict            Dict             // Catalog
@@ -160,7 +160,7 @@ func (xRefTable *XRefTable) VersionString() string {
 }
 
 // ParseRootVersion returns a string representation for an optional Version entry in the root object.
-func (xRefTable *XRefTable) ParseRootVersion() (v *string, err error) {
+func (xRefTable *XRefTable) ParseRootVersion() (v string, err error) {
 
 	// Look in the catalog/root for a name entry "Version".
 	// This entry overrides the header version.
@@ -1100,7 +1100,7 @@ func (xRefTable *XRefTable) Outlines() (*IndirectRef, error) {
 
 // MissingObjects returns the number of objects that were not written
 // plus the corresponding comma separated string representation.
-func (xRefTable *XRefTable) MissingObjects() (int, *string) {
+func (xRefTable *XRefTable) MissingObjects() (int, string) {
 
 	var missing []string
 
@@ -1110,7 +1110,7 @@ func (xRefTable *XRefTable) MissingObjects() (int, *string) {
 		}
 	}
 
-	var s *string
+	var s string
 
 	if len(missing) > 0 {
 		joined := strings.Join(missing, ",")

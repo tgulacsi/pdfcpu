@@ -87,15 +87,16 @@ func decodeArr(a Array) []colValRange {
 
 func pdfImage(xRefTable *XRefTable, sd *StreamDict, objNr int) (*PDFImage, error) {
 
-	bpc := *sd.IntEntry("BitsPerComponent")
+	bpc, _ := sd.IntEntry("BitsPerComponent")
 	//if bpc == 16 {
 	//	return nil, ErrUnsupported16BPC
 	//}
 
-	w := *sd.IntEntry("Width")
-	h := *sd.IntEntry("Height")
+	w, _ := sd.IntEntry("Width")
+	h, _ := sd.IntEntry("Height")
 
-	decode := decodeArr(sd.ArrayEntry("Decode"))
+	a, _ := sd.ArrayEntry("Decode")
+	decode := decodeArr(a)
 	//fmt.Printf("decode: %v\n", decode)
 
 	sm, err := softMask(xRefTable, sd, w, h, objNr)
@@ -226,21 +227,21 @@ func softMask(xRefTable *XRefTable, d *StreamDict, w, h, objNr int) ([]byte, err
 		return nil, err
 	}
 
-	bpc := sd.IntEntry("BitsPerComponent")
-	if bpc == nil {
+	bpc, ok := sd.IntEntry("BitsPerComponent")
+	if !ok {
 		log.Info.Printf("softMask: obj#%d - ignoring soft mask without bpc\n%s\n", objNr, sd)
 		return nil, nil
 	}
 
 	// TODO support soft masks with bpc != 8
 	// Will need to return the softmask bpc to caller.
-	if *bpc != 8 {
-		log.Info.Printf("softMask: obj#%d - ignoring soft mask with bpc=%d\n", objNr, *bpc)
+	if bpc != 8 {
+		log.Info.Printf("softMask: obj#%d - ignoring soft mask with bpc=%d\n", objNr, bpc)
 		return nil, nil
 	}
 
 	if sm != nil {
-		if len(sm) != (*bpc*w*h+7)/8 {
+		if len(sm) != (bpc*w*h+7)/8 {
 			log.Info.Printf("softMask: obj#%d - ignoring corrupt softmask\n%s\n", objNr, sd)
 			return nil, nil
 		}
@@ -428,7 +429,7 @@ func writeICCBased(xRefTable *XRefTable, filename string, im *PDFImage, cs Array
 	log.Debug.Printf("writeICCBasedToPNGFile: objNr=%d w=%d h=%d bpc=%d buflen=%d\n", im.objNr, im.w, im.h, im.bpc, len(b))
 
 	// 1,3 or 4 color components.
-	n := *iccProfileStream.IntEntry("N")
+	n, _ := iccProfileStream.IntEntry("N")
 
 	if !IntMemberOf(n, []int{1, 3, 4}) {
 		return "", errors.Errorf("writeICCBasedToPNGFile: objNr=%d, N must be 1,3 or 4, got:%d\n", im.objNr, n)
@@ -558,7 +559,7 @@ func writeIndexedArrayCS(xRefTable *XRefTable, filename string, im *PDFImage, cs
 		iccProfileStream, _ := xRefTable.DereferenceStreamDict(csa[1])
 
 		// 1,3 or 4 color components.
-		n := *iccProfileStream.IntEntry("N")
+		n, _ := iccProfileStream.IntEntry("N")
 		if !IntMemberOf(n, []int{1, 3, 4}) {
 			return "", errors.Errorf("writeIndexedArrayCS: objNr=%d, N must be 1,3 or 4, got:%d\n", im.objNr, n)
 		}

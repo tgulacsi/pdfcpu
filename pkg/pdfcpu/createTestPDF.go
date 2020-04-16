@@ -41,8 +41,7 @@ func createXRefTableWithRootDict() (*XRefTable, error) {
 
 	xRefTable.Table[0] = NewFreeHeadXRefTableEntry()
 
-	one := 1
-	xRefTable.Size = &one
+	xRefTable.Size = 1
 
 	v := (V17)
 	xRefTable.HeaderVersion = &v

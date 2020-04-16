@@ -54,7 +54,7 @@ func ExtractImageData(ctx *Context, objNr int) (*ImageObject, error) {
 	f := fpl[0].Name
 
 	// We do not extract imageMasks with the exception of CCITTDecoded images
-	if im := imageDict.BooleanEntry("ImageMask"); im != nil && *im {
+	if im, ok := imageDict.BooleanEntry("ImageMask"); ok && im {
 		if f != filter.CCITTFax {
 			log.Info.Printf("extractImageData: ignore obj# %d, imageMask\n", objNr)
 			return nil, nil
@@ -126,8 +126,8 @@ func ExtractFontData(ctx *Context, objNr int) (*FontObject, error) {
 		return nil, nil
 	}
 
-	ir := fontDescriptorFontFileIndirectObjectRef(d)
-	if ir == nil {
+	ir, ok := fontDescriptorFontFileIndirectObjectRef(d)
+	if !ok {
 		log.Debug.Printf("extractFontData: ignoring obj#%d - no font file available for font: %s\n", objNr, fontObject.FontName)
 		return nil, nil
 	}
@@ -140,7 +140,7 @@ func ExtractFontData(ctx *Context, objNr int) (*FontObject, error) {
 		// ttf ... true type file
 		// ttc ... true type collection
 		// This is just me guessing..
-		sd, err := ctx.DereferenceStreamDict(*ir)
+		sd, err := ctx.DereferenceStreamDict(ir)
 		if err != nil {
 			return nil, err
 		}

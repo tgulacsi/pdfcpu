@@ -120,11 +120,11 @@ type Configuration struct {
 
 	// Supplied user password
 	UserPW    string
-	UserPWNew *string
+	UserPWNew string
 
 	// Supplied owner password
 	OwnerPW    string
-	OwnerPWNew *string
+	OwnerPWNew string
 
 	// EncryptUsingAES ensures AES encryption.
 	// true: AES encryption

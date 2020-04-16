@@ -31,7 +31,7 @@ func byteForOctalString(octalBytes string) (b byte) {
 }
 
 // Escape applies all defined escape sequences to s.
-func Escape(s string) (*string, error) {
+func Escape(s string) (string, error) {
 
 	var b bytes.Buffer
 

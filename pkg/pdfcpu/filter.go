@@ -69,7 +69,7 @@ func encodeStream(sd *StreamDict) error {
 		log.Trace.Println("encodeStream: returning uncompressed stream.")
 		sd.Raw = sd.Content
 		streamLength := int64(len(sd.Raw))
-		sd.StreamLength = &streamLength
+		sd.StreamLength = streamLength
 
 		sd.Update("Length", Integer(streamLength))
 		return nil
@@ -108,7 +108,7 @@ func encodeStream(sd *StreamDict) error {
 	sd.Raw = c.Bytes()
 
 	streamLength := int64(len(sd.Raw))
-	sd.StreamLength = &streamLength
+	sd.StreamLength = streamLength
 	sd.Update("Length", Integer(streamLength))
 
 	log.Trace.Printf("encodeStream end")
@@ -157,11 +157,11 @@ func decodeStream(sd *StreamDict) error {
 			// if not available we supply the image "Height".
 			_, ok := parms["Rows"]
 			if !ok {
-				ip := sd.IntEntry("Height")
-				if ip == nil {
+				ip, ok := sd.IntEntry("Height")
+				if !ok {
 					return errors.New("pdfcpu: ccitt: \"Height\" required")
 				}
-				parms["Rows"] = *ip
+				parms["Rows"] = ip
 			}
 		}
 
